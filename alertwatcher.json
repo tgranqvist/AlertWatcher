@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "name": "AlertWatcher",
+  "description": "Watches RSS feeds of police and fire & rescue services, sends notifications of interesting events to ntfy.sh",
+  "source_url": false,
+  "guid": "4f924e525c0305a640c5f18691e48252",
+  "tag_fg_color": "#ffffff",
+  "tag_bg_color": "#df0707",
+  "icon": "bullhorn",
+  "exported_at": "2026-06-05T11:34:36Z",
+  "agents": [
+    {
+      "type": "Agents::RssAgent",
+      "name": "Fetch police callouts",
+      "disabled": false,
+      "guid": "259d91f6d644eeeadc47a1739221feb3",
+      "options": {
+        "expected_update_period_in_days": "1",
+        "clean": "\"true\"",
+        "url": [
+          "https://poliisi.fi/uutishuone/-/asset_publisher/PzioHCu9GXpI/rss",
+          "https://poliisi.fi/uutishuone/-/asset_publisher/Y5EKMNXbjFZD/rss"
+        ]
+      },
+      "schedule": "every_1m",
+      "keep_events_for": 604800
+    },
+    {
+      "type": "Agents::RssAgent",
+      "name": "Fetch fire & rescue callouts",
+      "disabled": false,
+      "guid": "35ed87309457d8db57654383bc3e03d5",
+      "options": {
+        "expected_update_period_in_days": "1",
+        "force_encoding": "ISO-8859-1",
+        "url": "https://www.peto-media.fi/tiedotteet/rss.xml",
+        "clean": true
+      },
+      "schedule": "every_1m",
+      "keep_events_for": 604800
+    },
+    {
+      "type": "Agents::PostAgent",
+      "name": "Send notification",
+      "disabled": false,
+      "guid": "37e686ba6899534420855fa2e10b770f",
+      "options": {
+        "post_url": "https://ntfy.tkjg.fi",
+        "expected_receive_period_in_days": "1",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "topic": "PetoWatcher",
+          "title": "{{title}}",
+          "message": "{{message}}",
+          "click": "{{click}}"
+        },
+        "headers": {
+          "Authorization": "Bearer {% credential ntfy %}"
+        },
+        "emit_events": "true",
+        "parse_body": "true",
+        "no_merge": "true",
+        "output_mode": "clean"
+      },
+      "schedule": "never",
+      "keep_events_for": 3600,
+      "propagate_immediately": true
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Filter police calls",
+      "disabled": false,
+      "guid": "58406a10f49e3197d3a519f1249ac371",
+      "options": {
+        "expected_receive_period_in_days": "5",
+        "keep_event": "true",
+        "rules": [
+          {
+            "type": "regex",
+            "value": "puuk|hyökk|ammus|koulu|drone|lenno|drooni",
+            "path": "title"
+          }
+        ]
+      },
+      "keep_events_for": 432000,
+      "propagate_immediately": true
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Filter fire & rescue calls",
+      "disabled": false,
+      "guid": "7fb844439d76d6526f0e3cccc7ce9ca5",
+      "options": {
+        "expected_receive_period_in_days": "1",
+        "keep_event": "true",
+        "rules": [
+          {
+            "type": "regex",
+            "value": ": suuri|ilmaliikenneonnettomuus",
+            "path": "description"
+          }
+        ]
+      },
+      "keep_events_for": 432000,
+      "propagate_immediately": true
+    },
+    {
+      "type": "Agents::EventFormattingAgent",
+      "name": "Build police payload",
+      "disabled": false,
+      "guid": "b60ff6ae582bb28e0334549ca8055d94",
+      "options": {
+        "instructions": {
+          "topic": "PetoWatcher",
+          "title": "👮Polisen",
+          "message": "{{title}}",
+          "priority": 4,
+          "click": "{{links[0].href}}"
+        },
+        "mode": "clean"
+      },
+      "keep_events_for": 432000,
+      "propagate_immediately": true
+    },
+    {
+      "type": "Agents::EventFormattingAgent",
+      "name": "Build fire & rescue payload",
+      "disabled": false,
+      "guid": "ee474330f093179c3c52f6e6143a00c6",
+      "options": {
+        "instructions": {
+          "topic": "PetoWatcher",
+          "title": "🚒Brand och räddning",
+          "message": "{{description}}",
+          "priority": "4",
+          "click": "https://tilannehuone.fi"
+        },
+        "mode": "clean"
+      },
+      "keep_events_for": 432000,
+      "propagate_immediately": true
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 2
+    },
+    {
+      "source": 6,
+      "receiver": 2
+    }
+  ],
+  "control_links": []
+}
